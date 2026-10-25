@@ -183,6 +183,54 @@ extension Mutations on DataStore {
     return const Result.ok(null);
   }
 
+  /// حذف حساب صاحب المطعم نهائيًا مع مطعمه وكل ما يتبعه: المنيو والطاولات
+  /// والطلبات وحسابات الكاشير والاشتراك. تُطلب كلمة المرور لأن لا رجوع بعده.
+  /// حساب الكاشير لا يُحذف من هنا — يحذفه صاحب المطعم من شاشة الموظفين.
+  Result<void> deleteAccount(String profileId, String password) {
+    final profile = _first(db.profiles, (p) => p.id == profileId);
+    if (profile == null) return _fail('الحساب غير موجود');
+    if (profile.role != Role.owner) return _fail('حساب الكاشير يحذفه صاحب المطعم من شاشة الموظفين');
+    if (profile.password != password) return _fail('كلمة المرور غير صحيحة');
+
+    final restaurantId = profile.restaurantId;
+    mutate((db) {
+      db.profiles.removeWhere((p) => p.id == profileId);
+      db.session = null;
+      if (restaurantId == null) return;
+
+      final dishIds = {
+        for (final d in db.dishes)
+          if (d.restaurantId == restaurantId) d.id,
+      };
+      final groupIds = {
+        for (final g in db.optionGroups)
+          if (dishIds.contains(g.dishId)) g.id,
+      };
+      final orderIds = {
+        for (final o in db.orders)
+          if (o.restaurantId == restaurantId) o.id,
+      };
+      final itemIds = {
+        for (final i in db.orderItems)
+          if (orderIds.contains(i.orderId)) i.id,
+      };
+
+      db.orderItemOptions.removeWhere((o) => itemIds.contains(o.orderItemId));
+      db.orderItems.removeWhere((i) => orderIds.contains(i.orderId));
+      db.orders.removeWhere((o) => o.restaurantId == restaurantId);
+      db.options.removeWhere((o) => groupIds.contains(o.groupId));
+      db.optionGroups.removeWhere((g) => groupIds.contains(g.id));
+      db.dishes.removeWhere((d) => d.restaurantId == restaurantId);
+      db.categories.removeWhere((c) => c.restaurantId == restaurantId);
+      db.tables.removeWhere((t) => t.restaurantId == restaurantId);
+      db.subscriptions.removeWhere((s) => s.restaurantId == restaurantId);
+      db.profiles.removeWhere((p) => p.restaurantId == restaurantId);
+      db.restaurants.removeWhere((r) => r.id == restaurantId);
+      db.orderSeq.remove(restaurantId);
+    });
+    return const Result.ok(null);
+  }
+
   /* ===================== إعدادات المطعم ===================== */
 
   /// patch يُطبَّق على نسخة أولًا للتحقق، ثم على البيانات. الرابط يُنظَّف

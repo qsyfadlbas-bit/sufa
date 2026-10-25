@@ -7,6 +7,11 @@ abstract final class AppConfig {
   /// متصفح جواله دون حاجة لتثبيت التطبيق.
   static const siteUrl = 'https://sufra.alqada.cloud';
 
+  /// صفحات الموقع التي يطلبها App Store وGoogle Play، ويُشار إليها من داخل التطبيق
+  static const privacyUrl = '$siteUrl/privacy';
+  static const termsUrl = '$siteUrl/terms';
+  static const deleteAccountUrl = '$siteUrl/delete-account';
+
   static String menuUrl(String slug) => '$siteUrl/m/$slug';
 
   static String tableUrl(String slug, String token) => '${menuUrl(slug)}?t=$token';

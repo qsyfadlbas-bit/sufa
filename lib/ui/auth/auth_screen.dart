@@ -14,6 +14,7 @@ import '../common/basics.dart';
 import '../common/brand.dart';
 import '../common/buttons.dart';
 import '../common/inputs.dart';
+import '../common/legal.dart';
 import '../common/sheets.dart';
 import '../storefront/storefront_page.dart';
 
@@ -190,6 +191,8 @@ class _AuthScreenState extends State<AuthScreen> {
                         expand: true,
                         onPressed: () => openGuestStorefront(context),
                       ),
+                      const SizedBox(height: 10),
+                      const LegalLinks(),
                     ],
                   ),
                 ),
@@ -321,6 +324,12 @@ class _AuthScreenState extends State<AuthScreen> {
           expand: true,
           busy: _busy,
           onPressed: _signup,
+        ),
+        const SizedBox(height: 12),
+        Text(
+          'بإنشاء الحساب توافق على الشروط والأحكام وسياسة الخصوصية — روابطهما أسفل الشاشة.',
+          textAlign: TextAlign.center,
+          style: txt(12, color: p.inkFaint, height: 1.7),
         ),
       ],
     );

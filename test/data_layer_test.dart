@@ -356,6 +356,64 @@ void main() {
     });
   });
 
+  group('حذف الحساب', () {
+    final store = DataStore.memory();
+    final rest = rukn(store);
+    final owner = store.db.profiles.firstWhere((p) => p.role == Role.owner && p.restaurantId == rest.id);
+    final staff = store.db.profiles.firstWhere((p) => p.role == Role.staff && p.restaurantId == rest.id);
+    final admin = store.db.profiles.firstWhere((p) => p.role == Role.admin);
+    final other = store.signUp(
+      const SignUpInput(
+        ownerName: 'نورة',
+        restaurantName: 'بيت الكبسة',
+        phone: '0509998887',
+        password: '123456',
+        slug: 'bait-alkabsa',
+      ),
+    );
+    store.signIn('0551234567', '123456');
+
+    test('كلمة مرور خاطئة لا تحذف', () {
+      expect(store.deleteAccount(owner.id, 'wrong').ok, isFalse);
+      expect(getRestaurantBySlug(store.db, 'al-rukn'), isNotNull);
+    });
+
+    test('الكاشير لا يحذف حسابه بنفسه', () => expect(store.deleteAccount(staff.id, '123456').ok, isFalse));
+
+    test('حذف حساب صاحب المطعم ينجح ولا يبقى شيء يتبع المطعم', () {
+      final deleted = store.deleteAccount(owner.id, '123456');
+      expect(deleted.ok, isTrue, reason: deleted.error);
+      final db = store.db;
+      expect(db.restaurants.any((r) => r.id == rest.id), isFalse);
+      expect(db.profiles.any((p) => p.id == owner.id || p.id == staff.id), isFalse);
+      expect(db.categories.any((c) => c.restaurantId == rest.id), isFalse);
+      expect(db.dishes.any((d) => d.restaurantId == rest.id), isFalse);
+      expect(db.tables.any((t) => t.restaurantId == rest.id), isFalse);
+      expect(db.orders.any((o) => o.restaurantId == rest.id), isFalse);
+      expect(db.subscriptions.any((s) => s.restaurantId == rest.id), isFalse);
+      expect(db.orderSeq.containsKey(rest.id), isFalse);
+      expect(db.session, isNull);
+    });
+
+    test('لا خيارات ولا بنود طلبات يتيمة', () {
+      final db = store.db;
+      final dishIds = {for (final d in db.dishes) d.id};
+      final groupIds = {for (final g in db.optionGroups) g.id};
+      final orderIds = {for (final o in db.orders) o.id};
+      final itemIds = {for (final i in db.orderItems) i.id};
+      expect(db.optionGroups.every((g) => dishIds.contains(g.dishId)), isTrue);
+      expect(db.options.every((o) => groupIds.contains(o.groupId)), isTrue);
+      expect(db.orderItems.every((i) => orderIds.contains(i.orderId)), isTrue);
+      expect(db.orderItemOptions.every((o) => itemIds.contains(o.orderItemId)), isTrue);
+    });
+
+    test('المطاعم الأخرى والمشرف باقون', () {
+      expect(other.ok, isTrue);
+      expect(store.db.restaurants.any((r) => r.id == other.data), isTrue);
+      expect(store.db.profiles.any((p) => p.id == admin.id), isTrue);
+    });
+  });
+
   group('التقارير', () {
     final store = DataStore.memory();
     final db = store.db;

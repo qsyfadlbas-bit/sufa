@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/colors.dart';
+import '../../core/config.dart';
 import '../../core/export.dart';
 import '../../core/feedback.dart';
 import '../../core/images.dart';
@@ -21,6 +22,7 @@ import '../auth/auth_screen.dart' show SlugField;
 import '../common/basics.dart';
 import '../common/buttons.dart';
 import '../common/inputs.dart';
+import '../common/legal.dart';
 import '../common/sheets.dart';
 
 const _swatches = [
@@ -62,6 +64,8 @@ class SettingsTool extends StatelessWidget {
           _PasswordCard(profile: profile),
           const SizedBox(height: 14),
           const _DataCard(),
+          const SizedBox(height: 14),
+          _DeleteAccountCard(profile: profile),
         ],
       ),
     );
@@ -1110,6 +1114,84 @@ class _DataCard extends StatelessWidget {
             onPressed: () => _reset(context),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/* ===================== حذف الحساب ===================== */
+
+/// يطلبه App Store: حذف الحساب من داخل التطبيق لا بمراسلة أحد.
+/// مقابل صفحة /delete-account في الموقع.
+class _DeleteAccountCard extends StatefulWidget {
+  const _DeleteAccountCard({required this.profile});
+
+  final Profile profile;
+
+  @override
+  State<_DeleteAccountCard> createState() => _DeleteAccountCardState();
+}
+
+class _DeleteAccountCardState extends State<_DeleteAccountCard> {
+  final _password = TextEditingController();
+
+  @override
+  void dispose() {
+    _password.dispose();
+    super.dispose();
+  }
+
+  Future<void> _delete() async {
+    FocusScope.of(context).unfocus();
+    final store = context.read<DataStore>();
+    final nav = context.read<NavState>();
+    final ok = await confirmAction(
+      context,
+      title: 'حذف الحساب نهائيًا',
+      body:
+          'سيُحذف حسابك ومطعمك والمنيو والطاولات والطلبات وحسابات الكاشير من هذا الجهاز. لا رجوع بعد التأكيد.',
+      confirmLabel: 'احذف نهائيًا',
+    );
+    if (!ok) return;
+    final result = store.deleteAccount(widget.profile.id, _password.text);
+    if (!result.ok) return toastError(result.error!);
+    dismissToasts();
+    nav.unbind();
+    toast('حُذف حسابك وكل بيانات مطعمك');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SurfaceCard(
+      child: ListenableBuilder(
+        listenable: _password,
+        builder: (context, _) => Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _CardTitle(
+              'حذف الحساب',
+              subtitle:
+                  'يحذف حسابك ومطعمك والمنيو والطاولات والطلبات وحسابات الكاشير نهائيًا. احفظ نسخة احتياطية أولًا إن أردت الاحتفاظ بشيء.',
+              trailing: TextButton(
+                onPressed: () => openLegalPage(AppConfig.deleteAccountUrl),
+                child: const Text('التفاصيل'),
+              ),
+            ),
+            LabeledField(
+              label: 'كلمة المرور',
+              hint: 'للتأكد أنك صاحب الحساب.',
+              child: PasswordField(controller: _password, onSubmitted: (_) => _delete()),
+            ),
+            const SizedBox(height: 14),
+            AppButton(
+              label: 'احذف حسابي نهائيًا',
+              icon: Icons.person_remove_outlined,
+              tone: BtnTone.danger,
+              expand: true,
+              onPressed: _password.text.isNotEmpty ? _delete : null,
+            ),
+          ],
+        ),
       ),
     );
   }

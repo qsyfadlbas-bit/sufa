@@ -19,6 +19,7 @@ import '../about/about_screen.dart';
 import '../common/basics.dart';
 import '../common/brand.dart';
 import '../common/inputs.dart';
+import '../common/legal.dart';
 import 'tools.dart';
 
 /// القائمة ☰: التبديل بين الأدوات من أي مكان، ثم الحساب والمظهر.
@@ -83,6 +84,22 @@ class AppDrawer extends StatelessWidget {
                   onTap: () {
                     Navigator.of(context).pop();
                     launchUrl(Uri.parse(AppConfig.siteUrl), mode: LaunchMode.externalApplication);
+                  },
+                ),
+                _Item(
+                  icon: Icons.privacy_tip_outlined,
+                  label: 'سياسة الخصوصية',
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    openLegalPage(AppConfig.privacyUrl);
+                  },
+                ),
+                _Item(
+                  icon: Icons.gavel_rounded,
+                  label: 'الشروط والأحكام',
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    openLegalPage(AppConfig.termsUrl);
                   },
                 ),
               ],

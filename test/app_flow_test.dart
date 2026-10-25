@@ -1,5 +1,5 @@
 // اختبار المسار الكامل للتطبيق: الدخول ← كل أداة ← طلب عميل كامل ← الوضع
-// الليلي ← الكاشير ← المشرف. يعمل مع كل `flutter test`.
+// الليلي ← الكاشير ← المشرف ← حذف الحساب. يعمل مع كل `flutter test`.
 //
 // ولقطات شاشة لكل الواجهات للمراجعة البصرية حين يُحدَّد مجلد الحفظ:
 //   SHOT_DIR=/path/to/dir flutter test test/app_flow_test.dart
@@ -15,10 +15,14 @@ import 'package:sufra/app.dart';
 import 'package:sufra/data/cart.dart';
 import 'package:sufra/data/models.dart';
 import 'package:sufra/data/mutations.dart';
+import 'package:sufra/data/queries.dart';
 import 'package:sufra/data/seed.dart';
 import 'package:sufra/data/store.dart';
 import 'package:sufra/state/nav.dart';
 import 'package:sufra/state/prefs.dart';
+import 'package:sufra/ui/auth/auth_screen.dart';
+import 'package:sufra/ui/common/inputs.dart';
+import 'package:sufra/ui/settings/settings_tool.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -255,6 +259,32 @@ void main() {
     await shot('24-hub-admin');
     await open(ToolId.restaurants, '25-admin-restaurants');
     await open(ToolId.plans, '26-admin-plans');
+    nav().goHome();
+
+    // ============ حذف الحساب من الإعدادات ============
+    store.signOut();
+    await _settle(tester);
+    store.signIn('0551234567', '123456');
+    await _settle(tester);
+    await open(ToolId.settings, '27-settings-owner');
+    // البطاقة آخر الإعدادات، والقائمة لا تبني ما تحت الشاشة بعد
+    await tester.scrollUntilVisible(
+      find.text('احذف حسابي نهائيًا'),
+      400,
+      scrollable: find.descendant(of: find.byType(SettingsTool), matching: find.byType(Scrollable)).first,
+    );
+    final deletePassword = find.byType(PasswordField).last;
+    await reveal(deletePassword);
+    await tester.enterText(deletePassword, '123456');
+    await reveal(find.text('احذف حسابي نهائيًا'));
+    await shot('27b-delete-account');
+    await tester.tap(find.text('احذف حسابي نهائيًا'));
+    await shot('27c-delete-account-confirm');
+    await tester.tap(find.widgetWithText(FilledButton, 'احذف نهائيًا'));
+    await shot('28-after-delete');
+    expect(getRestaurantBySlug(store.db, 'al-rukn'), isNull);
+    expect(store.db.session, isNull);
+    expect(find.byType(AuthScreen), findsOneWidget);
 
     // تنظيف: يوقف المؤقّتات والحركات قبل نهاية الاختبار
     await tester.pumpWidget(const SizedBox());
