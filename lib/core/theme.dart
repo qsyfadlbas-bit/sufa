@@ -1,3 +1,7 @@
+// CupertinoPageTransitionsBuilder انتقل من material إلى cupertino في إصدارات
+// Flutter الأحدث (التي يبني بها Codemagic)؛ في 3.38 تكفي material فيظهر التنبيه.
+// ignore: unnecessary_import
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
